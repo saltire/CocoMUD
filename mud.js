@@ -21,17 +21,18 @@ module.exports = class Mud {
   }
 
   async look(user) {
-    await scene.drawScene(user.currentRoom);
+    const sceneImg = new Discord.MessageAttachment(
+      await scene.drawScene(user.currentRoom), 'scene.png');
 
-    const testImg = new Discord.MessageAttachment('./images/test.png');
+    // const testImg = new Discord.MessageAttachment('./images/test.png');
 
     await this.send(user, {
       // content: `You are in room ${user.currentRoom}.`,
-      files: [testImg],
+      files: [sceneImg],
       embed: {
         description: `You are in room ${user.currentRoom}.`,
         image: {
-          url: 'attachment://test.png',
+          url: 'attachment://scene.png',
         },
       },
     });
