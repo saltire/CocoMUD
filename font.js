@@ -12,31 +12,35 @@ const edscii = [
   'PQRSTUVWXYZ♠♥♣♦●',
 ];
 
-let chars;
+let charsPromise;
 
 module.exports = {
   async getFont() {
-    const font = sharp('./images/c64_edscii.png');
-    chars = {};
+    if (!charsPromise) {
+      const font = sharp('./sprites/c64_edscii.png');
 
-    await Promise.all(edscii.map(async (row, y) => {
-      await Promise.all(row.split('').map(async (char, x) => {
-        chars[char] = await font
-          .extract({
-            left: x * 8,
-            top: y * 8,
-            width: 8,
-            height: 8,
-          })
-          .toBuffer();
-      }));
-    }));
+      charsPromise = Promise
+        .all(edscii
+          .flatMap((row, y) => row.split('')
+            .map(async (char, x) => [
+              char,
+              await font
+                .extract({
+                  left: x * 8,
+                  top: y * 8,
+                  width: 8,
+                  height: 8,
+                })
+                .toBuffer(),
+            ])))
+        .then(entries => Object.fromEntries(entries));
+    }
+
+    return charsPromise;
   },
 
   async renderLine(message) {
-    if (!chars) {
-      await this.getFont();
-    }
+    const chars = await this.getFont();
 
     const lines = message.split('\n');
     return sharp(
@@ -44,8 +48,8 @@ module.exports = {
         create: {
           width: Math.max(...lines.map(line => line.length)) * 8,
           height: lines.length * 8,
-          channels: 3,
-          background: { r: 0, g: 0, b: 0 },
+          channels: 4,
+          background: { r: 0, g: 0, b: 0, alpha: 0 },
         },
       })
       .composite(lines.flatMap((line, y) => line.split('').map((char, x) => ({

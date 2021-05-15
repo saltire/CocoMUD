@@ -1,8 +1,7 @@
 'use strict';
 
-const Sharp = require('sharp');
-
 const db = require('./db');
+const sprites = require('./sprites');
 const { choose, random, range } = require('./utils');
 
 
@@ -10,69 +9,12 @@ const ts = 20;
 const w = 20;
 const h = 12;
 
-const files = {
-  background: 'background1',
-  centre: 'Centre_0',
-  ns: [
-    'PathNS_0',
-    'PathNS_1',
-    'PathNS_2',
-  ],
-  ew: [
-    'PathEW_0',
-    'PathEW_1',
-    'PathEW_2',
-  ],
-  small: [
-    'rock1',
-    'rock2',
-    'rock3',
-    'smallfern1',
-    'smallfern2',
-  ],
-};
-let sprTree;
-let sprList;
-
 module.exports = {
-  async getSprite(file) {
-    const image = Sharp(`./sprites/${file}.gif`);
-    const { width, height } = await image.metadata();
-    return {
-      file,
-      image,
-      buffer: await image.toBuffer(),
-      tw: width / ts,
-      th: height / ts,
-    };
-  },
-
-  async getSprites() {
-    if (!sprTree) {
-      sprTree = {};
-      sprList = {};
-      await Promise.all(Object.entries(files).map(async ([id, file]) => {
-        if (Array.isArray(file)) {
-          sprTree[id] = await Promise.all(file.map(f => this.getSprite(f)));
-          sprTree[id].forEach(sprite => {
-            sprList[sprite.file] = sprite;
-          });
-        }
-        else {
-          sprTree[id] = await this.getSprite(file);
-          sprList[file] = sprTree[id];
-        }
-      }));
-    }
-
-    return { spriteTree: sprTree, spriteList: sprList };
-  },
-
   async createRoom(coords) {
-    const { spriteTree } = await this.getSprites();
+    const { spriteTree } = await sprites.getSprites();
 
     const objects = [];
-    range(random(50, 10)).forEach(() => {
+    range(random(100, 10)).forEach(() => {
       const tx = random(1) * (w / 2 + 1) + random(w / 2 - 2);
       const ty = random(1) * (h / 2 + 1) + random(h / 2 - 2);
       if (!objects.some(({ x, y }) => x === tx && y === ty)) {
@@ -83,10 +25,11 @@ module.exports = {
     return db.updateRoom({ coords, objects });
   },
 
-  async drawScene(coords) {
+  async drawScene(user) {
+    const coords = user.currentRoom;
     const { objects } = (await db.getRoom(coords)) || await this.createRoom(coords);
 
-    const { spriteTree, spriteList } = await this.getSprites();
+    const { spriteTree, spriteList } = await sprites.getSprites();
 
     const [x, y] = coords;
     const pathUses = await db.getMoves(coords);
@@ -130,11 +73,19 @@ module.exports = {
       top: ty * ts,
     }));
 
+    const charSprite = spriteTree.characters[user.character];
+    const character = {
+      input: charSprite.buffer,
+      left: (ts * w - charSprite.width) / 2,
+      top: (ts * h - charSprite.height) / 2,
+    };
+
     return spriteTree.background.image
       .clone()
       .composite([
         ...paths,
         ...objectImgs,
+        character,
       ])
       .png()
       .toBuffer();

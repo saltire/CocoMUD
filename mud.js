@@ -2,8 +2,10 @@
 
 const Discord = require('discord.js');
 
+const characters = require('./characters');
 const db = require('./db');
 const scene = require('./scene');
+const sprites = require('./sprites');
 
 
 module.exports = class Mud {
@@ -13,16 +15,22 @@ module.exports = class Mud {
   }
 
   async send(user, content, options) {
-    (await this.userManager.fetch(user.id)).send(content, options);
+    const discordUser = await this.userManager.fetch(user.id);
+    await discordUser.send(content, options);
   }
 
   async intro(user) {
     await this.send(user, 'Hello, and welcome to FunMUD!');
+
+    await this.send('Type a number to choose your character:');
+    await this.send(user, {
+      files: [new Discord.MessageAttachment(await characters.getCharacterScreen())],
+    });
   }
 
   async look(user) {
     const sceneImg = new Discord.MessageAttachment(
-      await scene.drawScene(user.currentRoom), 'scene.png');
+      await scene.drawScene(user), 'scene.png');
 
     // const testImg = new Discord.MessageAttachment('./images/test.png');
 
@@ -36,6 +44,20 @@ module.exports = class Mud {
         },
       },
     });
+  }
+
+  async parseCharacter(user, message) {
+    const num = parseInt(message);
+    const { spriteTree } = await sprites.getSprites();
+    if (num > 0 && num <= spriteTree.characters.length) {
+      const updatedUser = await db.updateUser({ id: user.id, character: num - 1 });
+
+      this.send(updatedUser, 'OK, here we go!');
+      this.look(updatedUser);
+    }
+    else {
+      this.send(user, `Try entering a number from 1 to ${spriteTree.characters.length}.`);
+    }
   }
 
   async parse(user, message) {
