@@ -2,43 +2,29 @@
 
 const Discord = require('discord.js');
 
-const font = require('./font');
+const db = require('./db');
+const Mud = require('./mud');
 
 
 const client = new Discord.Client();
-
-let chars;
+const mud = new Mud(client);
 
 client.on('ready', async () => {
-  chars = await font.getFont();
   console.log(`Logged in as ${client.user.tag}!`);
 });
 
 client.on('message', async msg => {
   console.log('Got message:', msg);
-  if (msg.channel.type === 'dm' && msg.author.tag !== client.user.tag) {
+  if ((msg.channel.type === 'dm' || msg.channel.name === 'testing') &&
+    msg.author.tag !== client.user.tag) {
+    let user = await db.getUser(msg.author.id);
 
-    const imgBuffer = await font.renderLine(chars, msg.content);
-    // msg.reply(new Discord.MessageAttachment(imgBuffer));
+    if (!user) {
+      user = await db.updateUser({ ...msg.author, currentRoom: [0, 0] });
+      await mud.intro(user);
+    }
 
-    // if (msg.member && msg.content.startsWith('!nick'))
-
-    msg.reply({
-      content: 'Content',
-      files: [new Discord.MessageAttachment(imgBuffer, 'font.png')],
-      embed: {
-        description: 'Here is your text in C64 format.',
-        image: {
-          url: 'attachment://font.png',
-        },
-      },
-    })
-  }
-
-  if (msg.author.tag === client.user.tag) {
-    msg.react('😊');
-    msg.react('😍');
-    msg.react('✨');
+    mud.look(user);
   }
 });
 

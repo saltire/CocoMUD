@@ -4,18 +4,20 @@ const sharp = require('sharp');
 
 
 const edscii = [
-  ` !"#$%&'()*+,-./`,
-  `0123456789:'<=>?`,
-  `@abcdefghijklmno`,
-  `pqrstuvwxyz[£]✓π`,
-  `█ABCDEFGHIJKLMNO`,
-  `PQRSTUVWXYZ♠♥♣♦●`,
+  ' !"#$%&\'()*+,-./',
+  '0123456789:;<=>?',
+  '@abcdefghijklmno',
+  'pqrstuvwxyz[£]✓π',
+  '█ABCDEFGHIJKLMNO',
+  'PQRSTUVWXYZ♠♥♣♦●',
 ];
+
+let chars;
 
 module.exports = {
   async getFont() {
-    const font = sharp('./c64_edscii.png');
-    const chars = {};
+    const font = sharp('./images/c64_edscii.png');
+    chars = {};
 
     await Promise.all(edscii.map(async (row, y) => {
       await Promise.all(row.split('').map(async (char, x) => {
@@ -29,11 +31,13 @@ module.exports = {
           .toBuffer();
       }));
     }));
-
-    return chars;
   },
 
-  async renderLine(chars, message) {
+  async renderLine(message) {
+    if (!chars) {
+      await this.getFont();
+    }
+
     const lines = message.split('\n');
     return sharp(
       {
