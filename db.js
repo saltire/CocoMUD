@@ -52,6 +52,21 @@ module.exports = {
       .then(result => result.value);
   },
 
+  // Rooms
+
+  async getRoom(coords) {
+    return (await this.collection('rooms')).findOne({ coords });
+  },
+
+  async updateRoom(roomData) {
+    return (await this.collection('rooms'))
+      .findOneAndUpdate(
+        { coords: roomData.coords },
+        { $set: roomData },
+        { upsert: true, returnOriginal: false })
+      .then(result => result.value);
+  },
+
   // Moves
 
   async addMove(userId, from, to) {
