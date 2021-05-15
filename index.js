@@ -23,8 +23,9 @@ client.on('message', async msg => {
       user = await db.updateUser({ ...msg.author, currentRoom: [0, 0] });
       await mud.intro(user);
     }
-
-    mud.look(user);
+    else {
+      await mud.parse(user, msg.content);
+    }
   }
 });
 

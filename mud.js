@@ -1,6 +1,7 @@
 'use strict';
 
 const Discord = require('discord.js');
+const db = require('./db');
 
 
 module.exports = class Mud {
@@ -30,5 +31,35 @@ module.exports = class Mud {
         },
       },
     });
+  }
+
+  async parse(user, message) {
+    const [verb, ...words] = message.toLowerCase().split(' ');
+
+    const dirs = ['n', 's', 'e', 'w', 'north', 'south', 'east', 'west'];
+
+    if (verb === 'look') {
+      await this.look(user);
+    }
+    else if ((verb === 'go' && dirs.includes(words[0])) || dirs.includes(verb)) {
+      const dir = (verb === 'go' ? words[0] : verb).charAt(0);
+
+      const { currentRoom } = user;
+      if (dir === 'n') {
+        currentRoom[1] -= 1;
+      }
+      else if (dir === 's') {
+        currentRoom[1] += 1;
+      }
+      else if (dir === 'e') {
+        currentRoom[0] += 1;
+      }
+      else if (dir === 'w') {
+        currentRoom[0] -= 1;
+      }
+
+      const updatedUser = await db.updateUser({ id: user.id, currentRoom });
+      await this.look(updatedUser);
+    }
   }
 };
