@@ -14,7 +14,8 @@ client.on('ready', async () => {
 });
 
 client.on('message', async msg => {
-  console.log('Got message:', msg);
+  // console.log('Got message:', msg);
+
   if ((msg.channel.type === 'dm' || msg.channel.name === 'testing') &&
     msg.author.tag !== client.user.tag) {
     let user = await db.getUser(msg.author.id);

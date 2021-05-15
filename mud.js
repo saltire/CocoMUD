@@ -1,7 +1,9 @@
 'use strict';
 
 const Discord = require('discord.js');
+
 const db = require('./db');
+const scene = require('./scene');
 
 
 module.exports = class Mud {
@@ -19,6 +21,8 @@ module.exports = class Mud {
   }
 
   async look(user) {
+    await scene.drawScene(user.currentRoom);
+
     const testImg = new Discord.MessageAttachment('./images/test.png');
 
     await this.send(user, {
@@ -45,20 +49,24 @@ module.exports = class Mud {
       const dir = (verb === 'go' ? words[0] : verb).charAt(0);
 
       const { currentRoom } = user;
+      const nextRoom = [...currentRoom];
       if (dir === 'n') {
-        currentRoom[1] -= 1;
+        nextRoom[1] -= 1;
       }
       else if (dir === 's') {
-        currentRoom[1] += 1;
+        nextRoom[1] += 1;
       }
       else if (dir === 'e') {
-        currentRoom[0] += 1;
+        nextRoom[0] += 1;
       }
       else if (dir === 'w') {
-        currentRoom[0] -= 1;
+        nextRoom[0] -= 1;
       }
 
-      const updatedUser = await db.updateUser({ id: user.id, currentRoom });
+      const [updatedUser] = await Promise.all([
+        db.updateUser({ id: user.id, currentRoom: nextRoom }),
+        db.addMove(user.id, currentRoom, nextRoom),
+      ]);
       await this.look(updatedUser);
     }
   }

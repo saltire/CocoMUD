@@ -37,7 +37,7 @@ module.exports = {
     return (await this.db()).collection(name);
   },
 
-  // Methods
+  // Users
 
   async getUser(id) {
     return (await this.collection('users')).findOne({ id });
@@ -50,5 +50,24 @@ module.exports = {
         { $set: userData },
         { upsert: true, returnOriginal: false })
       .then(result => result.value);
+  },
+
+  // Moves
+
+  async addMove(userId, from, to) {
+    return (await this.collection('moves')).insertOne({ userId, from, to });
+  },
+
+  async getMoves(coords) {
+    return (await this.collection('moves'))
+      .aggregate([
+        { $match: { $or: [{ from: coords }, { to: coords }] } },
+        { $project: { room: ['$from', '$to'] } },
+        { $unwind: '$room' },
+        { $match: { room: { $ne: coords } } },
+        { $group: { _id: '$room', count: { $sum: 1 } } },
+        { $project: { x: { $first: '$_id' }, y: { $last: '$_id' }, count: 1 } },
+      ])
+      .toArray();
   },
 };
