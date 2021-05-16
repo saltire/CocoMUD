@@ -30,6 +30,10 @@ const files = {
   goats: [
     { name: 'goatonapole', bw: 1, bh: 1, bx: 0, by: 1 },
   ],
+  coconuts: [
+    { name: 'coconut' },
+    { name: 'coconutpile', bw: 2, bh: 1, bx: 0, by: 1 },
+  ],
   characters: [
     { name: 'guy2' },
     { name: 'guy3' },

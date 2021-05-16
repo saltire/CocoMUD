@@ -215,34 +215,13 @@ module.exports = class Mud {
     const coords = user.character.currentRoom;
     const room = (await db.getRoom(coords)) || await scene.createRoom(coords);
 
-    let description = 'You are in the wilderness.';
-    if ((room.objects || []).length < 15) {
-      description = 'You are in a grassy meadow.';
-    }
-    else if ((room.objects || []).filter(o => o.name.startsWith('tree')).length > 2) {
-      description = 'You are in a forest.';
-    }
-    else if ((room.objects || []).filter(o => o.name.startsWith('rock')).length > 15) {
-      description = 'You are in a rocky area.';
-    }
-
-    const notes = [];
-    if ((room.objects || []).some(o => o.name.startsWith('goat'))) {
-      notes.push('A mysterious goat winks at you!');
-    }
-
     const sceneImg = new Discord.MessageAttachment(
       await scene.drawScene(user, room), 'scene.png');
 
     await this.send(user, {
       files: [sceneImg],
       embed: {
-        description: [
-          description,
-          ...notes,
-          ...(room.users || []).filter(u => u.id !== user.id)
-            .map(u => `**${u.character.name}** is here!`),
-        ].join('\n'),
+        description: scene.getDescription(user, room),
         image: { url: 'attachment://scene.png' },
       },
     });

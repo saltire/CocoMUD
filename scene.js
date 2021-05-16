@@ -38,13 +38,20 @@ module.exports = {
       });
     };
 
-    range(random(5, 0)).forEach(() => {
+    range(random(10, 0)).forEach(() => {
       tryPlacingSprite(choose(spriteTree.large));
     });
 
-    range(random(75, 10)).forEach(() => {
+    range(random(100, 10)).forEach(() => {
       tryPlacingSprite(choose(spriteTree.small));
     });
+
+    if (!random(3)) {
+      const cocoSprite = choose(spriteTree.coconuts);
+      range(random(5, 1)).forEach(() => {
+        tryPlacingSprite(cocoSprite);
+      });
+    }
 
     if (!random(19)) {
       tryPlacingSprite(choose(spriteTree.goats));
@@ -55,6 +62,39 @@ module.exports = {
       objects: objects
         .sort((a, b) => a.bymax - b.bymax),
     });
+  },
+
+  getDescription(user, room) {
+    let description = 'You are in the wilderness.';
+    if (room.objects.length < 20) {
+      description = 'You are in a grassy meadow.';
+    }
+    else if (room.objects.filter(o => o.name.startsWith('tree')).length > 2) {
+      description = 'You are in a forest.';
+    }
+    else if (room.objects.filter(o => o.name.startsWith('rock')).length > 15) {
+      description = 'You are in a rocky area.';
+    }
+
+    const notes = [];
+    if (room.objects.some(o => o.name.startsWith('goat'))) {
+      notes.push('A mysterious goat winks at you!');
+    }
+    const coconuts = room.objects.filter(o => o.name === 'coconut');
+    const coconutpiles = room.objects.filter(o => o.name === 'coconutpile');
+    if (coconuts.length) {
+      notes.push(`You see ${coconuts.length === 1 ? 'a coconut' : `${coconuts.length} coconuts`}.`);
+    }
+    if (coconutpiles.length) {
+      notes.push(`You see ${coconutpiles.length === 1 ? 'a pile' : `${coconutpiles.length} piles`}  of coconuts.`);
+    }
+
+    return [
+      description,
+      ...notes,
+      ...(room.users || []).filter(u => u.id !== user.id)
+        .map(u => `**${u.character.name}** is here!`),
+    ].join('\n');
   },
 
   async drawScene(user, room) {
