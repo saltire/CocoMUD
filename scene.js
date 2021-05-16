@@ -53,9 +53,8 @@ module.exports = {
     });
   },
 
-  async drawScene(user) {
-    const coords = user.currentRoom;
-    const { objects, users } = (await db.getRoom(coords)) || await this.createRoom(coords);
+  async drawScene(user, room) {
+    const { coords, objects, users } = room;
 
     const { spriteTree, spriteList } = await sprites.getSprites();
 
@@ -98,7 +97,7 @@ module.exports = {
         top: ty * ts,
       }));
 
-    const charSprite = spriteTree.characters[user.character];
+    const charSprite = spriteTree.characters[user.character.id];
     const characters = [
       {
         input: charSprite.buffer,
@@ -106,7 +105,7 @@ module.exports = {
         top: (ts * h - charSprite.height) / 2,
       },
       ...(users || []).filter(u => u.id !== user.id).map(otherUser => {
-        const otherCharSprite = spriteTree.characters[otherUser.character];
+        const otherCharSprite = spriteTree.characters[otherUser.character.id];
         const angle = Math.random() * Math.PI * 2;
         return {
           input: otherCharSprite.buffer,
