@@ -38,6 +38,13 @@ const files = {
     { name: 'guy2' },
     { name: 'guy3' },
   ],
+  ship: { name: 'mapstartscreen' },
+  ship1: { name: 'mapstartscreen_01' },
+  ship2: { name: 'mapstartscreen_02' },
+  ship3: { name: 'mapstartscreen_03' },
+  ship4: { name: 'mapstartscreen_04' },
+  ship5: { name: 'mapstartscreen_05' },
+  ship6: { name: 'mapstartscreen_06' },
 };
 let spritesPromise;
 

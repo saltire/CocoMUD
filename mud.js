@@ -57,7 +57,7 @@ module.exports = class Mud {
       return this.intro(user);
     }
     if (verb === 'coords') {
-      return this.send(user, `You are in room ${user.character.currentRoom}.`);
+      return this.sendBox(user, `You are in room ${user.character.currentRoom}.`);
     }
     if (verb === 'warp') {
       return this.warp(user, words[0]);
@@ -72,7 +72,7 @@ module.exports = class Mud {
       return this.look(user);
     }
     if (verb === 'say' && words.length) {
-      return this.say(user, words.join(' '));
+      return this.say(user, message.content.split(' ').slice(1).join(' '));
     }
     if ((verb === 'go' && dirs.includes(words[0])) || dirs.includes(verb)) {
       return this.move(user, (verb === 'go' ? words[0] : verb).charAt(0));
@@ -148,8 +148,13 @@ module.exports = class Mud {
       nextRoom[0] -= 1;
     }
 
+    if (currentRoom[0] === 0 &&
+      ((currentRoom[1] === 0 && dir === 'n') || (currentRoom[1] === -1 && dir === 's'))) {
+      return this.sendBox(user, 'The smoking wreckage of your ship blocks all movement in that direction. You\'ll have to go around.');
+    }
+
     if (nextRoom[0] < -180 || nextRoom[0] > 180 || nextRoom[1] < -90 || nextRoom[1] > 90) {
-      return this.send(user, 'You can\'t go that way!');
+      return this.sendBox(user, 'You can\'t go that way!');
     }
 
     const [character] = await Promise.all([
@@ -165,7 +170,7 @@ module.exports = class Mud {
 
     if (Number.isNaN(nextRoom[0]) || Number.isNaN(nextRoom[1]) ||
       nextRoom[0] < -180 || nextRoom[0] > 180 || nextRoom[1] < -90 || nextRoom[1] > 90) {
-      return this.send(user, 'You can\'t go that way!');
+      return this.sendBox(user, 'You can\'t go there!');
     }
 
     const character = await db.updateCharacter({ id: user.character.id, currentRoom: nextRoom });

@@ -40,6 +40,74 @@ module.exports = {
       });
     };
 
+    if (coords[0] === -1 && coords[1] === 0) {
+      objects.push({
+        name: 'mapstartscreen_04',
+        x: 0,
+        y: 0,
+        bxmin: 10,
+        bxmax: w,
+        bymin: 0,
+        bymax: 6,
+      });
+    }
+    else if (coords[0] === 0 && coords[1] === 0) {
+      objects.push({
+        name: 'mapstartscreen_05',
+        x: 0,
+        y: 0,
+        bxmin: 0,
+        bxmax: w,
+        bymin: 0,
+        bymax: 6,
+      });
+      tryPlacingSprite(choose(spriteTree.large));
+    }
+    else if (coords[0] === 1 && coords[1] === 0) {
+      objects.push({
+        name: 'mapstartscreen_06',
+        x: 0,
+        y: 0,
+        bxmin: 0,
+        bxmax: 10,
+        bymin: 0,
+        bymax: 6,
+      });
+    }
+    else if (coords[0] === -1 && coords[1] === -1) {
+      objects.push({
+        name: 'mapstartscreen_01',
+        x: 0,
+        y: 0,
+        bxmin: 10,
+        bxmax: w,
+        bymin: 5,
+        bymax: h,
+      });
+    }
+    else if (coords[0] === 0 && coords[1] === -1) {
+      objects.push({
+        name: 'mapstartscreen_02',
+        x: 0,
+        y: 0,
+        bxmin: 0,
+        bxmax: w,
+        bymin: 5,
+        bymax: h,
+      });
+    }
+    else if (coords[0] === 1 && coords[1] === -1) {
+      objects.push({
+        name: 'mapstartscreen_03',
+        x: 0,
+        y: 0,
+        bxmin: 0,
+        bxmax: w,
+        bymin: 10,
+        bymax: h,
+      });
+    }
+
     range(random(10, 0)).forEach(() => {
       tryPlacingSprite(choose(spriteTree.large));
     });
@@ -172,8 +240,8 @@ module.exports = {
     return spriteTree.background.image
       .clone()
       .composite([
-        ...paths,
         ...topObjects,
+        ...paths,
         ...characters,
         ...bottomObjects,
       ])
