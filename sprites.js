@@ -9,21 +9,27 @@ const { range } = require('./utils');
 const ts = 20;
 
 const files = {
-  background: 'background1',
-  ns: range(10).map(i => `Path_NS_${i + 1}`),
-  ew: range(10).map(i => `Path_E_${i + 1}`),
+  background: { name: 'background1' },
+  ns: range(10).map(i => ({ name: `Path_NS_${i + 1}` })),
+  ew: range(10).map(i => ({ name: `Path_E_${i + 1}` })),
   small: [
-    'grass1',
-    'grass2',
-    'rock1',
-    'rock2',
-    'rock3',
-    'smallfern1',
-    'smallfern2',
+    { name: 'grass1' },
+    { name: 'grass2' },
+    { name: 'rock1' },
+    { name: 'rock2' },
+    { name: 'rock3' },
+    { name: 'smallfern1' },
+    { name: 'smallfern2' },
+  ],
+  large: [
+    { name: 'fern', bw: 2, bh: 1, bx: 0, by: 1 },
+    { name: 'goatonapole', bw: 1, bh: 1, bx: 0, by: 1 },
+    { name: 'tree_froot1', bw: 2, bh: 2, bx: 1, by: 4 },
+    { name: 'tree_hole', bw: 3, bh: 2, bx: 1, by: 4 },
   ],
   characters: [
-    'guy2',
-    'guy3',
+    { name: 'guy2' },
+    { name: 'guy3' },
   ],
 };
 let spritesPromise;
@@ -31,17 +37,24 @@ let spritesPromise;
 let characterImg;
 
 module.exports = {
-  async getSprite(file) {
-    const image = sharp(`./sprites/${file}.gif`);
+  async getSprite({ name, ...data }) {
+    const image = sharp(`./sprites/${name}.gif`);
     const { width, height } = await image.metadata();
+    const tw = Math.ceil(width / ts);
+    const th = Math.ceil(height / ts);
     return {
-      file,
+      name,
       image,
       buffer: await image.toBuffer(),
       width,
       height,
-      tw: width / ts,
-      th: height / ts,
+      tw,
+      th,
+      bw: tw,
+      bh: th,
+      bx: 0,
+      by: 0,
+      ...data,
     };
   },
 
@@ -54,12 +67,12 @@ module.exports = {
           if (Array.isArray(file)) {
             spriteTree[id] = await Promise.all(file.map(f => this.getSprite(f)));
             spriteTree[id].forEach(sprite => {
-              spriteList[sprite.file] = sprite;
+              spriteList[sprite.name] = sprite;
             });
           }
           else {
             spriteTree[id] = await this.getSprite(file);
-            spriteList[file] = spriteTree[id];
+            spriteList[file.name] = spriteTree[id];
           }
         }))
         .then(() => ({ spriteTree, spriteList }));

@@ -14,15 +14,43 @@ module.exports = {
     const { spriteTree } = await sprites.getSprites();
 
     const objects = [];
-    range(random(100, 10)).forEach(() => {
-      const tx = random(1) * (w / 2 + 1) + random(w / 2 - 2);
-      const ty = random(1) * (h / 2 + 1) + random(h / 2 - 2);
-      if (!objects.some(({ x, y }) => x === tx && y === ty)) {
-        objects.push({ x: tx, y: ty, file: choose(spriteTree.small).file });
+
+    const tryPlacingSprite = sprite => {
+      const sx = random(1) * (w / 2 + 1) + random(w / 2 - 1 - sprite.bw);
+      const sy = random(1) * (h / 2 + 1) + random(h / 2 - 1 - sprite.bh);
+      for (let bx = sx; bx < sx + sprite.bw; bx += 1) {
+        for (let by = sy; by < sy + sprite.bh; by += 1) {
+          if (objects.some(({ bxmin, bxmax, bymin, bymax }) => (
+            bx >= bxmin && bx <= bxmax && by >= bymin && by <= bymax))) {
+            return;
+          }
+        }
       }
+      objects.push({
+        name: sprite.name,
+        x: sx - sprite.bx,
+        y: sy - sprite.by,
+        bxmin: sx,
+        bxmax: sx + sprite.bw - 1,
+        bymin: sy,
+        bymax: sy + sprite.bh - 1,
+      });
+    };
+
+    range(random(5, 0)).forEach(() => {
+      tryPlacingSprite(choose(spriteTree.large));
     });
 
-    return db.updateRoom({ coords, objects });
+    range(random(75, 10)).forEach(() => {
+      tryPlacingSprite(choose(spriteTree.small));
+    });
+
+    return db.updateRoom({
+      coords,
+      objects: objects
+        .sort((a, b) => a.bymax - b.bymax)
+        .map(({ bxmin, bxmax, bymin, bymax, ...sprite }) => sprite),
+    });
   },
 
   async drawScene(user) {
@@ -62,8 +90,8 @@ module.exports = {
       },
     ].filter(Boolean);
 
-    const objectImgs = objects.map(({ x: tx, y: ty, file }) => ({
-      input: spriteList[file].buffer,
+    const objectImgs = objects.map(({ name, x: tx, y: ty }) => ({
+      input: spriteList[name].buffer,
       left: tx * ts,
       top: ty * ts,
     }));
