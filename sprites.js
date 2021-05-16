@@ -9,7 +9,7 @@ const { range } = require('./utils');
 const ts = 20;
 
 const files = {
-  background: { name: 'background1' },
+  background: { name: 'background2' },
   ns: range(10).map(i => ({ name: `Path_NS_${i + 1}` })),
   ew: range(10).map(i => ({ name: `Path_E_${i + 1}` })),
   small: [
