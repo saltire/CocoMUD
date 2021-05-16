@@ -3,23 +3,15 @@
 const sharp = require('sharp');
 
 const font = require('./font');
+const { range } = require('./utils');
 
 
 const ts = 20;
 
 const files = {
   background: 'background1',
-  centre: 'Centre_0',
-  ns: [
-    'PathNS_0',
-    'PathNS_1',
-    'PathNS_2',
-  ],
-  ew: [
-    'PathEW_0',
-    'PathEW_1',
-    'PathEW_2',
-  ],
+  ns: range(10).map(i => `Path_NS_${i + 1}`),
+  ew: range(10).map(i => `Path_E_${i + 1}`),
   small: [
     'grass1',
     'grass2',

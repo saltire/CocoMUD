@@ -34,35 +34,30 @@ module.exports = {
     const [x, y] = coords;
     const pathUses = await db.getMoves(coords);
     const counts = {
-      n: Math.min(pathUses.find(p => p.x === x && p.y === y - 1)?.count || 0, 3),
-      s: Math.min(pathUses.find(p => p.x === x && p.y === y + 1)?.count || 0, 3),
-      e: Math.min(pathUses.find(p => p.x === x + 1 && p.y === y)?.count || 0, 3),
-      w: Math.min(pathUses.find(p => p.x === x - 1 && p.y === y)?.count || 0, 3),
+      n: Math.min(pathUses.find(p => p.x === x && p.y === y - 1)?.count || 0, spriteTree.ns.length),
+      s: Math.min(pathUses.find(p => p.x === x && p.y === y + 1)?.count || 0, spriteTree.ns.length),
+      e: Math.min(pathUses.find(p => p.x === x + 1 && p.y === y)?.count || 0, spriteTree.ew.length),
+      w: Math.min(pathUses.find(p => p.x === x - 1 && p.y === y)?.count || 0, spriteTree.ew.length),
     };
     const paths = [
-      {
-        input: spriteTree.centre.buffer,
-        left: ts * (w / 2 - 1),
-        top: ts * (h / 2 - 1),
-      },
       counts.n && {
         input: spriteTree.ns[counts.n - 1].buffer,
         left: ts * (w / 2 - 1),
-        top: 0,
+        top: -ts,
       },
       counts.s && {
         input: spriteTree.ns[counts.s - 1].buffer,
         left: ts * (w / 2 - 1),
-        top: ts * (h / 2 + 1),
+        top: ts * (h / 2),
       },
       counts.e && {
         input: spriteTree.ew[counts.e - 1].buffer,
-        left: ts * (w / 2 + 1),
+        left: ts * (w / 2),
         top: ts * (h / 2 - 1),
       },
       counts.w && {
         input: spriteTree.ew[counts.w - 1].buffer,
-        left: 0,
+        left: -ts,
         top: ts * (h / 2 - 1),
       },
     ].filter(Boolean);
