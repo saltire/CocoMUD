@@ -28,6 +28,13 @@ module.exports = class Mud {
       await this.intro(user);
       return this.chooseCharacter(user);
     }
+
+    const [verb, ...words] = message.content.toLowerCase().split(' ');
+
+    if (verb === 'help') {
+      return this.help(user);
+    }
+
     if (!user.character) {
       return this.parseCharacter(user, message.content);
     }
@@ -37,8 +44,6 @@ module.exports = class Mud {
     if (user.character.namePending) {
       return this.confirmCharacterName(user, message.content);
     }
-
-    const [verb, ...words] = message.content.toLowerCase().split(' ');
 
     if (verb === 'intro') {
       return this.intro(user);
@@ -98,6 +103,25 @@ module.exports = class Mud {
         ],
         image: { url: 'attachment://title.png' },
         footer: { text: 'Marcus Kamps (Programming), Laurel Kamps (Graphics)' },
+      },
+    });
+  }
+
+  async help(user) {
+    await this.send(user, {
+      embed: {
+        description: 'This is a text adventure! Type commands to interact with the game.',
+        fields: [
+          {
+            name: 'List of commands',
+            value: [
+              '**look** - Take a look at your surroundings.',
+              '**go north** / **north** / **n** - Move north (or south, east, or west).',
+              '**say *[something]*** - Say something out loud.',
+              '**help** - Show this message.',
+            ].join('\n'),
+          },
+        ],
       },
     });
   }
