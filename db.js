@@ -82,9 +82,18 @@ module.exports = {
       .aggregate([
         { $lookup: { from: 'moves', foreignField: 'characterId', localField: 'id', as: 'moves' } },
         { $project: { name: 1, moves: { $size: '$moves' } } },
+        { $match: { moves: { $gt: 0 } } },
         { $sort: { moves: -1 } },
         { $limit: limit || 5 },
       ])
+      .toArray();
+  },
+
+  async getTopCoconutsReturned(limit) {
+    return (await this.collection('characters'))
+      .find({ coconutsReturned: { $gt: 0 } })
+      .sort({ coconutsReturned: -1 })
+      .limit(limit || 5)
       .toArray();
   },
 

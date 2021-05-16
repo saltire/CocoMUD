@@ -120,6 +120,22 @@ module.exports = {
       (coords[0] === 0 && coords[1] === 0) ||
       (coords[0] === 1 && coords[1] === 0));
 
+    if ((coords[0] < -3 || coords[0] > 3 || coords[1] < -3 || coords[1] > 3) && !random(19)) {
+      const left = random(1);
+      objects.push({
+        name: 'coconutrepository',
+        x: left ? random(4, 2) : random(14, 12),
+        y: 1,
+        bxmin: left ? 1 : 12,
+        bxmax: left ? 8 : 19,
+        bymin: 7,
+        bymax: 12,
+      });
+    }
+    else {
+      console.log(2, coords);
+    }
+
     range(random(startScreen ? 3 : 10, 0)).forEach(() => {
       tryPlacingSprite(choose(spriteTree.large));
     });
@@ -161,9 +177,11 @@ module.exports = {
     }
 
     const notes = [];
+
     if (room.objects.some(o => o.name.startsWith('goat'))) {
       notes.push('A mysterious goat winks at you!');
     }
+
     const coconuts = room.objects.filter(o => o.name === 'coconut');
     const coconutpiles = room.objects.filter(o => o.name === 'coconutpile');
     if (coconuts.length) {
@@ -171,6 +189,10 @@ module.exports = {
     }
     if (coconutpiles.length) {
       notes.push(`You see ${coconutpiles.length === 1 ? 'a pile' : `${coconutpiles.length} piles`}  of coconuts.`);
+    }
+
+    if (room.objects.some(o => o.name === 'coconutrepository')) {
+      notes.push('A coconut repository looms overhead. Drop your coconuts here!');
     }
 
     return [

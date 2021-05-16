@@ -46,6 +46,7 @@ const files = {
   ship4: { name: 'mapstartscreen_04' },
   ship5: { name: 'mapstartscreen_05' },
   ship6: { name: 'mapstartscreen_06' },
+  repo: { name: 'coconutrepository', bx: 0, by: 6, bw: 4, bh: 4 },
 };
 let spritesPromise;
 

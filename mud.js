@@ -19,8 +19,10 @@ module.exports = class Mud {
   }
 
   async send(user, content, options) {
-    const discordUser = await this.userManager.fetch(user.id);
-    await discordUser.send(content, options);
+    if (!user.disabled) {
+      const discordUser = await this.userManager.fetch(user.id);
+      await discordUser.send(content, options);
+    }
   }
 
   async sendBox(user, description) {
@@ -29,17 +31,27 @@ module.exports = class Mud {
 
   async parse(message) {
     let user = await db.getUser(message.author.id);
-    if (!user) {
-      user = await db.updateUser({ ...message.author });
+    if (!user || user.disabled) {
+      user = await db.updateUser({ ...message.author, disabled: false });
       await this.intro(user);
       return this.chooseCharacter(user);
     }
 
     const [verb, ...words] = message.content.toLowerCase().split(' ');
 
+    // Priority commands
+
     if (verb === 'help') {
       return this.help(user);
     }
+    if (verb === 'restart') {
+      return this.restart(user);
+    }
+    if (verb === 'quit') {
+      return this.quit(user);
+    }
+
+    // Setup steps
 
     if (!user.character) {
       return this.parseCharacter(user, message.content);
@@ -77,21 +89,22 @@ module.exports = class Mud {
     if (['take', 'get', 'grab', 'carry', 'steal'].includes(verb) || (verb === 'pick' && words[0] === 'up')) {
       return this.take(user, words[verb === 'pick' ? 1 : 0]);
     }
+    if (['drop', 'put', 'insert'].includes(verb) &&
+      ['nuts', 'coconuts', 'nut', 'coconut'].includes(words[0])) {
+      return this.drop(user);
+    }
     if (verb === 'score') {
       return this.score(user);
-    }
-    if (verb === 'restart') {
-      return this.restart(user);
-    }
-    if (verb === 'quit') {
-      return this.quit(user);
     }
 
     return null;
   }
 
   async intro(user) {
-    const topRoomsVisited = await db.getTopRoomsVisited();
+    const [topRoomsVisited, topCoconutsReturned] = await Promise.all([
+      db.getTopRoomsVisited(),
+      db.getTopCoconutsReturned(),
+    ]);
 
     const titleImg = new Discord.MessageAttachment(
       (await sprites.getSprite('title')).buffer, 'title.png');
@@ -106,7 +119,12 @@ module.exports = class Mud {
         fields: [
           {
             name: 'Most Rooms Visited',
-            value: (topRoomsVisited || []).map(u => `${u.name} - ${u.moves}`).join('\n'),
+            value: (topRoomsVisited || []).map(c => `${c.name} - ${c.moves}`).join('\n'),
+            inline: true,
+          },
+          {
+            name: 'Most Coconuts Returned',
+            value: (topCoconutsReturned || []).map(c => `${c.name} - ${c.coconutsReturned}`).join('\n'),
             inline: true,
           },
         ].filter(f => f.value),
@@ -127,6 +145,7 @@ module.exports = class Mud {
               '**look** - Take a look at your surroundings.',
               '**go north** / **north** / **n** - Move north (or south, east, or west).',
               '**take** / **get** / **pick up *[object]*** - Pick up an object and take it with you.',
+              '**drop** / **put *[object]*** - Drop an object.',
               '**say *[something]*** - Say something out loud.',
               '**score** - Show your current score.',
               '**restart** - Abandon your game and start again.',
@@ -316,13 +335,34 @@ module.exports = class Mud {
     ].filter(Boolean).join('\n'));
   }
 
+  async drop(user) {
+    if (user.character.coconuts === 0) {
+      return this.sendBox(user, 'You aren\'t carrying any coconuts!');
+    }
+
+    const { objects } = await this.getRoom(user.character.currentRoom);
+    if (objects.some(o => o.name === 'coconutrepository')) {
+      const character = await db.updateCharacter({
+        id: user.character.id,
+        coconuts: 0,
+        coconutsReturned: (user.character.coconutsReturned || 0) + user.character.coconuts,
+      });
+      await this.sendBox(user,
+        'You drop all your coconuts in the repository\'s slot. It whirrs as they are whisked away, and for a few moments you see a bright orange beam cast up into the sky.');
+      await this.sendBox(user,
+        `You have dropped off a total of ${character.coconutsReturned} coconut${character.coconutsReturned === 1 ? '' : 's'}!`);
+    }
+
+    return this.sendBox(user, 'You drop all your coconuts on the ground.');
+  }
+
   async score(user) {
     return this.sendBox(user, `You are carrying ${user.character.coconuts || 0} coconut${user.character.coconuts === 1 ? '' : 's'}.`);
   }
 
   async quit(user) {
-    await db.updateUser({ id: user.id, character: null });
-    return this.send(user,
+    await this.send(user,
       'OK, thanks for playing! Send me another message if you\'d like to play again!');
+    await db.updateUser({ id: user.id, characterId: null, disabled: true });
   }
 };
