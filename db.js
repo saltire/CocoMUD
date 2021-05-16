@@ -55,7 +55,20 @@ module.exports = {
   // Rooms
 
   async getRoom(coords) {
-    return (await this.collection('rooms')).findOne({ coords });
+    return (await this.collection('rooms'))
+      .aggregate([
+        { $match: { coords } },
+        {
+          $lookup: {
+            from: 'users',
+            let: { coords: '$coords' },
+            pipeline: [{ $match: { $expr: { $eq: ['$currentRoom', '$$coords'] } } }],
+            as: 'users',
+          },
+        },
+      ])
+      .toArray()
+      .then(results => results[0]);
   },
 
   async updateRoom(roomData) {

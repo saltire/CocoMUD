@@ -8,6 +8,7 @@ const { choose, random, range } = require('./utils');
 const ts = 20;
 const w = 20;
 const h = 12;
+const charDist = 1.25;
 
 module.exports = {
   async createRoom(coords) {
@@ -48,14 +49,13 @@ module.exports = {
     return db.updateRoom({
       coords,
       objects: objects
-        .sort((a, b) => a.bymax - b.bymax)
-        .map(({ bxmin, bxmax, bymin, bymax, ...sprite }) => sprite),
+        .sort((a, b) => a.bymax - b.bymax),
     });
   },
 
   async drawScene(user) {
     const coords = user.currentRoom;
-    const { objects } = (await db.getRoom(coords)) || await this.createRoom(coords);
+    const { objects, users } = (await db.getRoom(coords)) || await this.createRoom(coords);
 
     const { spriteTree, spriteList } = await sprites.getSprites();
 
@@ -90,25 +90,47 @@ module.exports = {
       },
     ].filter(Boolean);
 
-    const objectImgs = objects.map(({ name, x: tx, y: ty }) => ({
-      input: spriteList[name].buffer,
-      left: tx * ts,
-      top: ty * ts,
-    }));
+    const topObjects = objects
+      .filter(({ bymax }) => bymax <= h / 2)
+      .map(({ name, x: tx, y: ty }) => ({
+        input: spriteList[name].buffer,
+        left: tx * ts,
+        top: ty * ts,
+      }));
 
     const charSprite = spriteTree.characters[user.character];
-    const character = {
-      input: charSprite.buffer,
-      left: (ts * w - charSprite.width) / 2,
-      top: (ts * h - charSprite.height) / 2,
-    };
+    const characters = [
+      {
+        input: charSprite.buffer,
+        left: (ts * w - charSprite.width) / 2,
+        top: (ts * h - charSprite.height) / 2,
+      },
+      ...(users || []).filter(u => u.id !== user.id).map(otherUser => {
+        const otherCharSprite = spriteTree.characters[otherUser.character];
+        const angle = Math.random() * Math.PI * 2;
+        return {
+          input: otherCharSprite.buffer,
+          left: (ts * w - otherCharSprite.width) / 2 + Math.round(ts * charDist * Math.sin(angle)),
+          top: (ts * h - otherCharSprite.height) / 2 + Math.round(ts * charDist * Math.cos(angle)),
+        };
+      }),
+    ];
+
+    const bottomObjects = objects
+      .filter(({ bymax }) => bymax > h / 2)
+      .map(({ name, x: tx, y: ty }) => ({
+        input: spriteList[name].buffer,
+        left: tx * ts,
+        top: ty * ts,
+      }));
 
     return spriteTree.background.image
       .clone()
       .composite([
         ...paths,
-        ...objectImgs,
-        character,
+        ...topObjects,
+        ...characters,
+        ...bottomObjects,
       ])
       .png()
       .toBuffer();
