@@ -10,6 +10,7 @@ const ts = 20;
 
 const files = {
   title: { name: 'title' },
+  credits: { name: 'credits' },
   background: { name: 'background2' },
   ns: range(10).map(i => ({ name: `Path_NS_${i + 1}` })),
   ew: range(10).map(i => ({ name: `Path_E_${i + 1}` })),
@@ -36,8 +37,13 @@ const files = {
     { name: 'coconutpile', bw: 2, bh: 1, bx: 0, by: 1, nouns: ['coconut', 'coconuts', 'nut', 'nuts', 'pile', 'piles'], canTake: true, hasCount: true },
   ],
   characters: [
+    { name: 'guy1' },
     { name: 'guy2' },
     { name: 'guy3' },
+    { name: 'guy4' },
+    { name: 'guy5' },
+    { name: 'guy6' },
+    { name: 'guy7' },
   ],
   ship: { name: 'mapstartscreen' },
   ship1: { name: 'mapstartscreen_01' },

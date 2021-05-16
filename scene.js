@@ -120,7 +120,7 @@ module.exports = {
       (coords[0] === 0 && coords[1] === 0) ||
       (coords[0] === 1 && coords[1] === 0));
 
-    if ((coords[0] < -3 || coords[0] > 3 || coords[1] < -3 || coords[1] > 3) && !random(19)) {
+    if ((coords[0] < -3 || coords[0] > 3 || coords[1] < -3 || coords[1] > 3) && !random(5)) {
       const left = random(1);
       objects.push({
         name: 'coconutrepository',
@@ -166,7 +166,25 @@ module.exports = {
 
   getDescription(user, room) {
     let description = 'You are in the wilderness.';
-    if (room.objects.filter(o => o.name.startsWith('tree')).length > 2) {
+    if (room.coords[0] === 0 && room.coords[1] === 0) {
+      description = 'You are standing on an alien world, beside the wreckage of your spaceship. Strange sights and smells surround you, from the coarse grass to the bright blue trees. Well, no sense standing around here mourning your terrible landing skills. You\'ve got to pick a direction and start hunting those coconuts!';
+    }
+    else if (room.coords[0] === 1 && room.coords[1] === 0) {
+      description = 'You stand at the edge of your.. landing site. You can see a couple pieces of one of your ship\'s satellite dishes. It\'s really too bad - that was the one that picked up Space Cable, and you were really looking forward to the season finale of "Mercury Tim and the Space Hobos."';
+    }
+    else if (room.coords[0] === 1 && room.coords[1] === -1) {
+      description = 'You stand a bit to the north of your ship, determinedly ignoring the cracked chunk of debris in the dirt. What did that even come off of, anyway? Shoddy worksmanship, that\'s what that is.';
+    }
+    else if (room.coords[0] === 0 && room.coords[1] === -1) {
+      description = 'You stand just to the north of the smoking husk that was once your spaceship. You suppose it could have been worse. At least it didn\'t land upside-down... that emergency hatch just makes the most terrible screeching noise when it opens, and that\'s really the last thing your nerves needed today.';
+    }
+    else if (room.coords[0] === -1 && room.coords[1] === -1) {
+      description = 'You stand to the north of your poor cracked spaceship. Well, really, it\'s only got itself to blame for this mess. No one ever told you that "autopilot" doesn\'t also mean "auto-land."';
+    }
+    else if (room.coords[0] === -1 && room.coords[1] === 0) {
+      description = 'You stand in front of the nose of your cracked and smoking spaceship. You\'re not quite sure what exactly in that front compartment is capable of being on fire, but decide it\'s best not to think too hard about it. There is wilderness to be explored!';
+    }
+    else if (room.objects.filter(o => o.name.startsWith('tree')).length > 2) {
       description = 'You are in a forest.';
     }
     else if (room.objects.filter(o => o.name.startsWith('rock')).length > 15) {

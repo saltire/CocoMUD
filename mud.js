@@ -96,6 +96,9 @@ module.exports = class Mud {
     if (verb === 'score') {
       return this.score(user);
     }
+    if (verb === 'credits') {
+      return this.credits(user);
+    }
 
     return null;
   }
@@ -112,10 +115,8 @@ module.exports = class Mud {
     await this.send(user, {
       files: [titleImg],
       embed: {
-        title: 'FunMUD',
-        description: [
-          'A Discord Adventure',
-        ].join('\n'),
+        title: 'CocoMUD',
+        description: 'A Discord Adventure',
         fields: [
           {
             name: 'Most Rooms Visited',
@@ -126,6 +127,18 @@ module.exports = class Mud {
             name: 'Most Coconuts Returned',
             value: (topCoconutsReturned || []).map(c => `${c.name} - ${c.coconutsReturned}`).join('\n'),
             inline: true,
+          },
+          {
+            name: 'Developer Notes',
+            value: [
+              'Hello TOJam! Hopefully this game works, but probably it doesn\'t!',
+              '',
+              'Some other mechanics we had planned but haven\'t yet made it: giant pools of sticky oobleck, swarms of bees, waypoints and portals, clever escapes, grisly deaths, and grim looming statues where other characters have met their untimely end...',
+              '',
+              'This is a multiplayer game so anyone can join, just DM the CocoMUD bot!',
+              '',
+              '- Marcus (@saltire) & Laurel (@Pimpette)',
+            ].join('\n'),
           },
         ].filter(f => f.value),
         image: { url: 'attachment://title.png' },
@@ -148,6 +161,7 @@ module.exports = class Mud {
               '**drop** / **put *[object]*** - Drop an object.',
               '**say *[something]*** - Say something out loud.',
               '**score** - Show your current score.',
+              '**credits** - See the credits.',
               '**restart** - Abandon your game and start again.',
               '**quit** - Abandon your game. You won\'t receive any further messages.',
               '**help** - Show this message.',
@@ -223,7 +237,11 @@ module.exports = class Mud {
   }
 
   async chooseCharacter(user) {
-    await this.send(user, 'Hello, and welcome to FunMUD!');
+    await this.send(user, [
+      'Hello, and welcome to CocoMUD!',
+      'The game where you collect coconuts and explore as far as you possibly can. Break new paths! Or re-trample the old ones, though no one ever found coconuts that way.',
+      'At any time, type `help` to see your list of commands.',
+    ].join('\n'));
     await this.send(user, 'Type a number to choose your character:');
     await this.send(user, {
       files: [new Discord.MessageAttachment(await characters.getCharacterScreen())],
@@ -260,7 +278,7 @@ module.exports = class Mud {
       const updatedUser = { ...user, character };
       await message.react('👍');
       await this.send(updatedUser, 'OK, here we go!');
-      await this.send(updatedUser, 'Type `help` for instructions.');
+      await this.send(updatedUser, 'Remember, just type `help` for instructions.');
       await this.look(updatedUser);
 
       const { users } = (await db.getRoom([0, 0])) || {};
@@ -306,7 +324,7 @@ module.exports = class Mud {
       return this.sendBox(user, 'You can\'t take that.');
     }
     if (user.character.coconuts >= maxCoconuts) {
-      return this.sendBox(user, 'You can\'t carry any more coconuts!');
+      return this.sendBox(user, 'You can\'t carry any more coconuts! Try to find somewhere to drop them off.');
     }
 
     const currentCount = user.character.coconuts || 0;
@@ -349,15 +367,32 @@ module.exports = class Mud {
       });
       await this.sendBox(user,
         'You drop all your coconuts in the repository\'s slot. It whirrs as they are whisked away, and for a few moments you see a bright orange beam cast up into the sky.');
-      await this.sendBox(user,
+      return this.sendBox(user,
         `You have dropped off a total of ${character.coconutsReturned} coconut${character.coconutsReturned === 1 ? '' : 's'}!`);
     }
 
+    await db.updateCharacter({
+      id: user.character.id,
+      coconuts: 0,
+    });
     return this.sendBox(user, 'You drop all your coconuts on the ground.');
   }
 
   async score(user) {
     return this.sendBox(user, `You are carrying ${user.character.coconuts || 0} coconut${user.character.coconuts === 1 ? '' : 's'}.`);
+  }
+
+  async credits(user) {
+    const titleImg = new Discord.MessageAttachment(
+      (await sprites.getSprite('credits')).buffer, 'credits.png');
+
+    await this.send(user, {
+      files: [titleImg],
+      embed: {
+        image: { url: 'attachment://credits.png' },
+        footer: { text: 'Marcus Kamps (Programming), Laurel Kamps (Graphics)' },
+      },
+    });
   }
 
   async quit(user) {
