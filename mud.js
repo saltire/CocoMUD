@@ -62,9 +62,6 @@ module.exports = class Mud {
     if (verb === 'warp') {
       return this.warp(user, words[0]);
     }
-    if (verb === 'restart') {
-      return this.restart(user);
-    }
 
     // Main commands
 
@@ -82,6 +79,12 @@ module.exports = class Mud {
     }
     if (verb === 'score') {
       return this.score(user);
+    }
+    if (verb === 'restart') {
+      return this.restart(user);
+    }
+    if (verb === 'quit') {
+      return this.quit(user);
     }
 
     return null;
@@ -124,6 +127,8 @@ module.exports = class Mud {
               '**take** / **get** / **pick up *[object]*** - Pick up an object and take it with you.',
               '**say *[something]*** - Say something out loud.',
               '**score** - Show your current score.',
+              '**restart** - Abandon your game and start again.',
+              '**quit** - Abandon your game. You won\'t receive any further messages.',
               '**help** - Show this message.',
             ].join('\n'),
           },
@@ -157,12 +162,24 @@ module.exports = class Mud {
       return this.sendBox(user, 'You can\'t go that way!');
     }
 
-    const [character] = await Promise.all([
+    const [character, { users: currentUsers } = {}, { users: nextUsers } = {}] = await Promise.all([
       db.updateCharacter({ id: user.character.id, currentRoom: nextRoom }),
+      db.getRoom(currentRoom),
+      db.getRoom(nextRoom),
       db.addMove(user.character.id, currentRoom, nextRoom),
     ]);
     const updatedUser = { ...user, character };
-    return this.look(updatedUser);
+
+    const toDir = { n: 'north', s: 'south', e: 'east', w: 'west' }[dir];
+    const fromDir = { s: 'north', n: 'south', w: 'east', e: 'west' }[dir];
+
+    return Promise.all([
+      this.look(updatedUser),
+      ...(currentUsers || []).filter(u => u.id !== user.id)
+        .map(u => this.sendBox(u, `**${user.character.name}** goes away to the ${toDir}!`)),
+      ...(nextUsers || []).filter(u => u.id !== user.id)
+        .map(u => this.sendBox(u, `**${user.character.name}** appears from the ${fromDir}!`)),
+    ]);
   }
 
   async warp(user, word) {
@@ -223,6 +240,10 @@ module.exports = class Mud {
       await message.react('👍');
       await this.send(updatedUser, 'OK, here we go!');
       await this.look(updatedUser);
+
+      const { users } = (await db.getRoom([0, 0])) || {};
+      await Promise.all((users || []).filter(u => u.id !== user.id)
+        .map(u => this.sendBox(u, `**${character.name}** appears!`)));
     }
     else {
       await this.parseCharacterName(user, message.content);
@@ -294,5 +315,11 @@ module.exports = class Mud {
 
   async score(user) {
     return this.sendBox(user, `You are carrying ${user.character.coconuts} coconut${user.character.coconuts === 1 ? '' : 's'}.`);
+  }
+
+  async quit(user) {
+    await db.updateUser({ id: user.id, character: null });
+    return this.send(user,
+      'OK, thanks for playing! Send me another message if you\'d like to play again!');
   }
 };
