@@ -100,7 +100,9 @@ module.exports = class Mud {
       files: [titleImg],
       embed: {
         title: 'FunMUD',
-        description: 'A Discord Adventure',
+        description: [
+          'A Discord Adventure',
+        ].join('\n'),
         fields: [
           {
             name: 'Most Rooms Visited',
@@ -239,6 +241,7 @@ module.exports = class Mud {
       const updatedUser = { ...user, character };
       await message.react('👍');
       await this.send(updatedUser, 'OK, here we go!');
+      await this.send(updatedUser, 'Type `help` for instructions.');
       await this.look(updatedUser);
 
       const { users } = (await db.getRoom([0, 0])) || {};
@@ -307,14 +310,14 @@ module.exports = class Mud {
     ]);
 
     return this.sendBox(user, [
-      `OK, you picked up ${newCount} coconut${newCount === 1 ? '' : 's'}! You now have ${character.coconuts} coconut${character.coconuts === 1 ? '' : 's'}.`,
+      `OK, you picked up ${newCount} coconut${newCount === 1 ? '' : 's'}! You now have ${character.coconuts || 0} coconut${character.coconuts === 1 ? '' : 's'}.`,
       character.coconuts >= maxCoconuts &&
         'You don\'t think you can carry any more! Better find some place to unload them.',
     ].filter(Boolean).join('\n'));
   }
 
   async score(user) {
-    return this.sendBox(user, `You are carrying ${user.character.coconuts} coconut${user.character.coconuts === 1 ? '' : 's'}.`);
+    return this.sendBox(user, `You are carrying ${user.character.coconuts || 0} coconut${user.character.coconuts === 1 ? '' : 's'}.`);
   }
 
   async quit(user) {

@@ -36,6 +36,7 @@ module.exports = {
         bymin: sy,
         bymax: sy + sprite.bh - 1,
         nouns: sprite.nouns,
+        canTake: sprite.canTake,
         ...sprite.hasCount ? { count: random(5, 2) } : {},
       });
     };
@@ -116,15 +117,22 @@ module.exports = {
       tryPlacingSprite(choose(spriteTree.small));
     });
 
-    if (!random(3)) {
-      const cocoSprite = choose(spriteTree.coconuts);
-      range(random(5, 1)).forEach(() => {
-        tryPlacingSprite(cocoSprite);
-      });
-    }
+    if (!((coords[0] === -1 && coords[1] === -1) ||
+      (coords[0] === 0 && coords[1] === -1) ||
+      (coords[0] === 1 && coords[1] === -1) ||
+      (coords[0] === -1 && coords[1] === 0) ||
+      (coords[0] === 0 && coords[1] === 0) ||
+      (coords[0] === 1 && coords[1] === 0))) {
+      if (!random(3)) {
+        const cocoSprite = choose(spriteTree.coconuts);
+        range(random(5, 1)).forEach(() => {
+          tryPlacingSprite(cocoSprite);
+        });
+      }
 
-    if (!random(19)) {
-      tryPlacingSprite(choose(spriteTree.goats));
+      if (!random(19)) {
+        tryPlacingSprite(choose(spriteTree.goats));
+      }
     }
 
     return db.updateRoom({
