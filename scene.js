@@ -101,7 +101,7 @@ module.exports = {
         top: ty * ts,
       }));
 
-    const charSprite = spriteTree.characters[user.character.id];
+    const charSprite = spriteTree.characters[user.character.type];
     const characters = [
       {
         input: charSprite.buffer,
@@ -109,7 +109,7 @@ module.exports = {
         top: (ts * h - charSprite.height) / 2,
       },
       ...(users || []).filter(u => u.id !== user.id).map(otherUser => {
-        const otherCharSprite = spriteTree.characters[otherUser.character.id];
+        const otherCharSprite = spriteTree.characters[otherUser.character.type];
         const angle = Math.random() * Math.PI * 2;
         return {
           input: otherCharSprite.buffer,

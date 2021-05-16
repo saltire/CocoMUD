@@ -8,7 +8,8 @@
   "dependencies": {
     "discord.js": "^12.5.3",
     "mongodb": "^3.6.6",
-    "sharp": "^0.28.2"
+    "sharp": "^0.28.2",
+    "uuid": "^8.3.2"
   },
   "devDependencies": {
     "dotenv": "^8.2.0",

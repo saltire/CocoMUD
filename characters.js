@@ -30,8 +30,6 @@ module.exports = {
         },
       ]))).flat();
 
-      console.log(comps);
-
       characterImg = sharp(
         {
           create: {

@@ -40,7 +40,21 @@ module.exports = {
   // Users
 
   async getUser(id) {
-    return (await this.collection('users')).findOne({ id });
+    return (await this.collection('users'))
+      .aggregate([
+        { $match: { id } },
+        {
+          $lookup: {
+            from: 'characters',
+            foreignField: 'id',
+            localField: 'characterId',
+            as: 'character',
+          },
+        },
+        { $unwind: { path: '$character', preserveNullAndEmptyArrays: true } },
+      ])
+      .toArray()
+      .then(result => result[0]);
   },
 
   async updateUser(userData) {
@@ -52,11 +66,22 @@ module.exports = {
       .then(result => result.value);
   },
 
+  // Characters
+
+  async updateCharacter(charData) {
+    return (await this.collection('characters'))
+      .findOneAndUpdate(
+        { id: charData.id },
+        { $set: charData },
+        { upsert: true, returnOriginal: false })
+      .then(result => result.value);
+  },
+
   async getTopRoomsVisited(limit) {
-    return (await this.collection('users'))
+    return (await this.collection('characters'))
       .aggregate([
-        { $lookup: { from: 'moves', foreignField: 'userId', localField: 'id', as: 'moves' } },
-        { $project: { id: 1, character: 1, moves: { $size: '$moves' } } },
+        { $lookup: { from: 'moves', foreignField: 'characterId', localField: 'id', as: 'moves' } },
+        { $project: { name: 1, moves: { $size: '$moves' } } },
         { $sort: { moves: -1 } },
         { $limit: limit || 5 },
       ])
@@ -72,8 +97,19 @@ module.exports = {
         {
           $lookup: {
             from: 'users',
-            let: { coords: '$coords' },
-            pipeline: [{ $match: { $expr: { $eq: ['$currentRoom', '$$coords'] } } }],
+            pipeline: [
+              { $match: {} },
+              {
+                $lookup: {
+                  from: 'characters',
+                  foreignField: 'id',
+                  localField: 'characterId',
+                  as: 'character',
+                },
+              },
+              { $unwind: '$character' },
+              { $match: { 'character.currentRoom': coords } },
+            ],
             as: 'users',
           },
         },
@@ -93,8 +129,8 @@ module.exports = {
 
   // Moves
 
-  async addMove(userId, from, to) {
-    return (await this.collection('moves')).insertOne({ userId, from, to });
+  async addMove(characterId, from, to) {
+    return (await this.collection('moves')).insertOne({ characterId, from, to });
   },
 
   async getRoomMoves(coords) {

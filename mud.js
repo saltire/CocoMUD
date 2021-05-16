@@ -1,6 +1,7 @@
 'use strict';
 
 const Discord = require('discord.js');
+const { v4: uuidv4 } = require('uuid');
 
 const characters = require('./characters');
 const db = require('./db');
@@ -51,7 +52,7 @@ module.exports = class Mud {
       return this.intro(user);
     }
     if (verb === 'coords') {
-      return this.send(user, `You are in room ${user.currentRoom}.`);
+      return this.send(user, `You are in room ${user.character.currentRoom}.`);
     }
     if (verb === 'warp') {
       return this.warp(user, words[0]);
@@ -89,10 +90,10 @@ module.exports = class Mud {
         fields: [
           {
             name: 'Most Rooms Visited',
-            value: (topRoomsVisited || []).map(u => `${u.character.name} - ${u.moves}`).join('\n'),
+            value: (topRoomsVisited || []).map(u => `${u.name} - ${u.moves}`).join('\n'),
             inline: true,
           },
-        ],
+        ].filter(f => f.value),
         image: { url: 'attachment://title.png' },
         footer: { text: 'Marcus Kamps (Programming), Laurel Kamps (Graphics)' },
       },
@@ -119,7 +120,7 @@ module.exports = class Mud {
   }
 
   async move(user, dir) {
-    const { currentRoom } = user;
+    const { currentRoom } = user.character;
     const nextRoom = [...currentRoom];
     if (dir === 'n') {
       nextRoom[1] -= 1;
@@ -138,10 +139,11 @@ module.exports = class Mud {
       return this.send(user, 'You can\'t go that way!');
     }
 
-    const [updatedUser] = await Promise.all([
-      db.updateUser({ id: user.id, currentRoom: nextRoom }),
-      db.addMove(user.id, currentRoom, nextRoom),
+    const [character] = await Promise.all([
+      db.updateCharacter({ id: user.character.id, currentRoom: nextRoom }),
+      db.addMove(user.character.id, currentRoom, nextRoom),
     ]);
+    const updatedUser = { ...user, character };
     return this.look(updatedUser);
   }
 
@@ -153,13 +155,15 @@ module.exports = class Mud {
       return this.send(user, 'You can\'t go that way!');
     }
 
-    const updatedUser = await db.updateUser({ id: user.id, currentRoom: nextRoom });
+    const character = await db.updateCharacter({ id: user.character.id, currentRoom: nextRoom });
+    const updatedUser = { ...user, character };
     return this.look(updatedUser);
   }
 
   async restart(user) {
-    await db.updateUser({ id: user.id, character: null });
-    return this.parse('');
+    const updatedUser = await db.updateUser({ id: user.id, characterId: null });
+    await this.intro(updatedUser);
+    return this.chooseCharacter(updatedUser);
   }
 
   async chooseCharacter(user) {
@@ -174,7 +178,8 @@ module.exports = class Mud {
     const num = parseInt(content);
     const { spriteTree } = await sprites.getSprites();
     if (num > 0 && num <= spriteTree.characters.length) {
-      await db.updateUser({ id: user.id, 'character.id': num - 1 });
+      const character = await db.updateCharacter({ id: uuidv4(), userId: user.id, type: num - 1 });
+      await db.updateUser({ id: user.id, characterId: character.id });
 
       await this.send(user, 'What is your character\'s name?');
     }
@@ -184,22 +189,22 @@ module.exports = class Mud {
   }
 
   async parseCharacterName(user, content) {
-    await db.updateUser({ id: user.id, 'character.namePending': content });
+    await db.updateCharacter({ id: user.characterId, name: content, namePending: true });
     await this.send(user,
       `Name your character **${content}**? Type \`yes\` to confirm, or enter a different name.`);
   }
 
   async confirmCharacterName(user, message) {
     if (['y', 'yes'].includes(message.content.toLowerCase())) {
-      await db.updateUser({
-        id: user.id,
+      const character = await db.updateCharacter({
+        id: user.characterId,
+        namePending: false,
         currentRoom: [0, 0],
-        'character.name': user.character.namePending,
-        'character.namePending': null,
       });
+      const updatedUser = { ...user, character };
       await message.react('👍');
-      await this.send(user, 'OK, here we go!');
-      await this.look(user);
+      await this.send(updatedUser, 'OK, here we go!');
+      await this.look(updatedUser);
     }
     else {
       await this.parseCharacterName(user, message.content);
@@ -207,7 +212,7 @@ module.exports = class Mud {
   }
 
   async look(user) {
-    const coords = user.currentRoom;
+    const coords = user.character.currentRoom;
     const room = (await db.getRoom(coords)) || await scene.createRoom(coords);
 
     let description = 'You are in the wilderness.';
@@ -244,7 +249,7 @@ module.exports = class Mud {
   }
 
   async say(user, text) {
-    const { users } = await db.getRoom(user.currentRoom);
+    const { users } = await db.getRoom(user.character.currentRoom);
 
     await Promise.all(users.map(u => this.send(u, {
       embed: {
