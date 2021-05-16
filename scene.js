@@ -35,6 +35,8 @@ module.exports = {
         bxmax: sx + sprite.bw - 1,
         bymin: sy,
         bymax: sy + sprite.bh - 1,
+        nouns: sprite.nouns,
+        ...sprite.hasCount ? { count: random(5, 2) } : {},
       });
     };
 

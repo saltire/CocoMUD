@@ -10,6 +10,7 @@ const sprites = require('./sprites');
 
 
 const dirs = ['n', 's', 'e', 'w', 'north', 'south', 'east', 'west'];
+const maxCoconuts = 10;
 
 module.exports = class Mud {
   constructor(client) {
@@ -20,6 +21,10 @@ module.exports = class Mud {
   async send(user, content, options) {
     const discordUser = await this.userManager.fetch(user.id);
     await discordUser.send(content, options);
+  }
+
+  async sendBox(user, description) {
+    await this.send(user, { embed: { description } });
   }
 
   async parse(message) {
@@ -72,6 +77,12 @@ module.exports = class Mud {
     if ((verb === 'go' && dirs.includes(words[0])) || dirs.includes(verb)) {
       return this.move(user, (verb === 'go' ? words[0] : verb).charAt(0));
     }
+    if (['take', 'get', 'grab', 'carry', 'steal'].includes(verb) || (verb === 'pick' && words[0] === 'up')) {
+      return this.take(user, words[verb === 'pick' ? 1 : 0]);
+    }
+    if (verb === 'score') {
+      return this.score(user);
+    }
 
     return null;
   }
@@ -110,7 +121,9 @@ module.exports = class Mud {
             value: [
               '**look** - Take a look at your surroundings.',
               '**go north** / **north** / **n** - Move north (or south, east, or west).',
+              '**take** / **get** / **pick up *[object]*** - Pick up an object and take it with you.',
               '**say *[something]*** - Say something out loud.',
+              '**score** - Show your current score.',
               '**help** - Show this message.',
             ].join('\n'),
           },
@@ -230,10 +243,51 @@ module.exports = class Mud {
   async say(user, text) {
     const { users } = await db.getRoom(user.character.currentRoom);
 
-    await Promise.all(users.map(u => this.send(u, {
-      embed: {
-        description: `**${user.character.name}** says: *${text}*`,
-      },
-    })));
+    await Promise.all(users
+      .map(u => this.sendBox(u, `**${user.character.name}** says: *${text}*`)));
+  }
+
+  async take(user, noun) {
+    const { coords, objects } = await db.getRoom(user.character.currentRoom);
+
+    const matchingObjs = objects.filter(obj => obj.nouns?.includes(noun));
+    if (!matchingObjs.length) {
+      return this.sendBox(user, 'There\'s nothing like that here for you to take.');
+    }
+    if (!matchingObjs.some(obj => obj.canTake)) {
+      return this.sendBox(user, 'You can\'t take that.');
+    }
+    if (user.character.coconuts >= maxCoconuts) {
+      return this.sendBox(user, 'You can\'t carry any more coconuts!');
+    }
+
+    const currentCount = user.character.coconuts || 0;
+    let newCount = 0;
+    matchingObjs.forEach(obj => {
+      const num = obj.count || 1;
+      const maxNum = Math.min(num, maxCoconuts - (currentCount + newCount));
+      newCount += maxNum;
+      if (maxNum === num) {
+        Object.assign(obj, { gone: true });
+      }
+      else {
+        Object.assign(obj, { count: num - maxNum });
+      }
+    });
+
+    const [character] = await Promise.all([
+      db.updateCharacter({ id: user.character.id, coconuts: currentCount + newCount }),
+      db.updateRoom({ coords, objects: objects.filter(obj => !obj.gone) }),
+    ]);
+
+    return this.sendBox(user, [
+      `OK, you picked up ${newCount} coconut${newCount === 1 ? '' : 's'}! You now have ${character.coconuts} coconut${character.coconuts === 1 ? '' : 's'}.`,
+      character.coconuts >= maxCoconuts &&
+        'You don\'t think you can carry any more! Better find some place to unload them.',
+    ].filter(Boolean).join('\n'));
+  }
+
+  async score(user) {
+    return this.sendBox(user, `You are carrying ${user.character.coconuts} coconut${user.character.coconuts === 1 ? '' : 's'}.`);
   }
 };
