@@ -24,9 +24,11 @@ const files = {
   ],
   large: [
     { name: 'fern', bw: 2, bh: 1, bx: 0, by: 1 },
-    { name: 'goatonapole', bw: 1, bh: 1, bx: 0, by: 1 },
     { name: 'tree_froot1', bw: 2, bh: 2, bx: 1, by: 4 },
     { name: 'tree_hole', bw: 3, bh: 2, bx: 1, by: 4 },
+  ],
+  goats: [
+    { name: 'goatonapole', bw: 1, bh: 1, bx: 0, by: 1 },
   ],
   characters: [
     { name: 'guy2' },

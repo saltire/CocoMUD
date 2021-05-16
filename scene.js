@@ -46,6 +46,10 @@ module.exports = {
       tryPlacingSprite(choose(spriteTree.small));
     });
 
+    if (!random(19)) {
+      tryPlacingSprite(choose(spriteTree.goats));
+    }
+
     return db.updateRoom({
       coords,
       objects: objects

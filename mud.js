@@ -45,39 +45,28 @@ module.exports = class Mud {
       return this.confirmCharacterName(user, message.content);
     }
 
+    // Debug commands
+
     if (verb === 'intro') {
       return this.intro(user);
     }
+    if (verb === 'coords') {
+      return this.send(user, `You are in room ${user.currentRoom}.`);
+    }
+    if (verb === 'warp') {
+      return this.warp(user, words[0]);
+    }
+
+    // Main commands
+
     if (verb === 'look') {
       return this.look(user);
     }
     if (verb === 'say' && words.length) {
       return this.say(user, words.join(' '));
     }
-
     if ((verb === 'go' && dirs.includes(words[0])) || dirs.includes(verb)) {
-      const dir = (verb === 'go' ? words[0] : verb).charAt(0);
-
-      const { currentRoom } = user;
-      const nextRoom = [...currentRoom];
-      if (dir === 'n') {
-        nextRoom[1] -= 1;
-      }
-      else if (dir === 's') {
-        nextRoom[1] += 1;
-      }
-      else if (dir === 'e') {
-        nextRoom[0] += 1;
-      }
-      else if (dir === 'w') {
-        nextRoom[0] -= 1;
-      }
-
-      const [updatedUser] = await Promise.all([
-        db.updateUser({ id: user.id, currentRoom: nextRoom }),
-        db.addMove(user.id, currentRoom, nextRoom),
-      ]);
-      return this.look(updatedUser);
+      return this.move(user, (verb === 'go' ? words[0] : verb).charAt(0));
     }
 
     return null;
@@ -124,6 +113,45 @@ module.exports = class Mud {
         ],
       },
     });
+  }
+
+  async move(user, dir) {
+    const { currentRoom } = user;
+    const nextRoom = [...currentRoom];
+    if (dir === 'n') {
+      nextRoom[1] -= 1;
+    }
+    else if (dir === 's') {
+      nextRoom[1] += 1;
+    }
+    else if (dir === 'e') {
+      nextRoom[0] += 1;
+    }
+    else if (dir === 'w') {
+      nextRoom[0] -= 1;
+    }
+
+    if (nextRoom[0] < -180 || nextRoom[0] > 180 || nextRoom[1] < -90 || nextRoom[1] > 90) {
+      return this.send(user, 'You can\'t go that way!');
+    }
+
+    const [updatedUser] = await Promise.all([
+      db.updateUser({ id: user.id, currentRoom: nextRoom }),
+      db.addMove(user.id, currentRoom, nextRoom),
+    ]);
+    return this.look(updatedUser);
+  }
+
+  async warp(user, word) {
+    const nextRoom = word.split(',').map(w => parseInt(w));
+
+    if (Number.isNaN(nextRoom[0]) || Number.isNaN(nextRoom[1]) ||
+      nextRoom[0] < -180 || nextRoom[0] > 180 || nextRoom[1] < -90 || nextRoom[1] > 90) {
+      return this.send(user, 'You can\'t go that way!');
+    }
+
+    const updatedUser = await db.updateUser({ id: user.id, currentRoom: nextRoom });
+    return this.look(updatedUser);
   }
 
   async chooseCharacter(user) {
@@ -173,17 +201,31 @@ module.exports = class Mud {
     const coords = user.currentRoom;
     const room = (await db.getRoom(coords)) || await scene.createRoom(coords);
 
+    let description = 'You are in the wilderness.';
+    if ((room.objects || []).length < 15) {
+      description = 'You are in a grassy meadow.';
+    }
+    else if ((room.objects || []).filter(o => o.name.startsWith('tree')).length > 2) {
+      description = 'You are in a forest.';
+    }
+    else if ((room.objects || []).filter(o => o.name.startsWith('rock')).length > 15) {
+      description = 'You are in a rocky area.';
+    }
+
+    const notes = [];
+    if ((room.objects || []).some(o => o.name.startsWith('goat'))) {
+      notes.push('A mysterious goat winks at you!');
+    }
+
     const sceneImg = new Discord.MessageAttachment(
       await scene.drawScene(user, room), 'scene.png');
 
-    // const testImg = new Discord.MessageAttachment('./images/test.png');
-
     await this.send(user, {
-      // content: `You are in room ${user.currentRoom}.`,
       files: [sceneImg],
       embed: {
         description: [
-          `You are in room ${user.currentRoom}.`,
+          description,
+          ...notes,
           ...(room.users || []).filter(u => u.id !== user.id)
             .map(u => `**${u.character.name}** is here!`),
         ].join('\n'),
