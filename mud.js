@@ -42,7 +42,7 @@ module.exports = class Mud {
       return this.parseCharacterName(user, message.content);
     }
     if (user.character.namePending) {
-      return this.confirmCharacterName(user, message.content);
+      return this.confirmCharacterName(user, message);
     }
 
     // Debug commands
@@ -55,6 +55,9 @@ module.exports = class Mud {
     }
     if (verb === 'warp') {
       return this.warp(user, words[0]);
+    }
+    if (verb === 'restart') {
+      return this.restart(user);
     }
 
     // Main commands
@@ -85,7 +88,7 @@ module.exports = class Mud {
         description: 'A Discord Adventure',
         fields: [
           {
-            name: 'Top Rooms Visited',
+            name: 'Most Rooms Visited',
             value: (topRoomsVisited || []).map(u => `${u.character.name} - ${u.moves}`).join('\n'),
             inline: true,
           },
@@ -154,6 +157,11 @@ module.exports = class Mud {
     return this.look(updatedUser);
   }
 
+  async restart(user) {
+    await db.updateUser({ id: user.id, character: null });
+    return this.parse('');
+  }
+
   async chooseCharacter(user) {
     await this.send(user, 'Hello, and welcome to FunMUD!');
     await this.send(user, 'Type a number to choose your character:');
@@ -181,19 +189,20 @@ module.exports = class Mud {
       `Name your character **${content}**? Type \`yes\` to confirm, or enter a different name.`);
   }
 
-  async confirmCharacterName(user, content) {
-    if (['y', 'yes'].includes(content.toLowerCase())) {
+  async confirmCharacterName(user, message) {
+    if (['y', 'yes'].includes(message.content.toLowerCase())) {
       await db.updateUser({
         id: user.id,
         currentRoom: [0, 0],
         'character.name': user.character.namePending,
         'character.namePending': null,
       });
+      await message.react('👍');
       await this.send(user, 'OK, here we go!');
       await this.look(user);
     }
     else {
-      await this.parseCharacterName(user, content);
+      await this.parseCharacterName(user, message.content);
     }
   }
 

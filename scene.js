@@ -63,7 +63,7 @@ module.exports = {
     const { spriteTree, spriteList } = await sprites.getSprites();
 
     const [x, y] = coords;
-    const pathUses = await db.getMoves(coords);
+    const pathUses = await db.getRoomMoves(coords);
     const counts = {
       n: Math.min(pathUses.find(p => p.x === x && p.y === y - 1)?.count || 0, spriteTree.ns.length),
       s: Math.min(pathUses.find(p => p.x === x && p.y === y + 1)?.count || 0, spriteTree.ns.length),

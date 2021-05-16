@@ -97,7 +97,7 @@ module.exports = {
     return (await this.collection('moves')).insertOne({ userId, from, to });
   },
 
-  async getMoves(coords) {
+  async getRoomMoves(coords) {
     return (await this.collection('moves'))
       .aggregate([
         { $match: { $or: [{ from: coords }, { to: coords }] } },
