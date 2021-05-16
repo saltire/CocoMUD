@@ -358,7 +358,7 @@ module.exports = class Mud {
       return this.sendBox(user, 'You aren\'t carrying any coconuts!');
     }
 
-    const { objects } = await this.getRoom(user.character.currentRoom);
+    const { objects } = await db.getRoom(user.character.currentRoom);
     if (objects.some(o => o.name === 'coconutrepository')) {
       const character = await db.updateCharacter({
         id: user.character.id,

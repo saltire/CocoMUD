@@ -120,7 +120,7 @@ module.exports = {
       (coords[0] === 0 && coords[1] === 0) ||
       (coords[0] === 1 && coords[1] === 0));
 
-    if ((coords[0] < -3 || coords[0] > 3 || coords[1] < -3 || coords[1] > 3) && !random(5)) {
+    if ((coords[0] < -3 || coords[0] > 3 || coords[1] < -3 || coords[1] > 3) && !random(15)) {
       const left = random(1);
       objects.push({
         name: 'coconutrepository',
@@ -131,9 +131,6 @@ module.exports = {
         bymin: 7,
         bymax: 12,
       });
-    }
-    else {
-      console.log(2, coords);
     }
 
     range(random(startScreen ? 3 : 10, 0)).forEach(() => {
