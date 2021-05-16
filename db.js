@@ -52,6 +52,17 @@ module.exports = {
       .then(result => result.value);
   },
 
+  async getTopRoomsVisited(limit) {
+    return (await this.collection('users'))
+      .aggregate([
+        { $lookup: { from: 'moves', foreignField: 'userId', localField: 'id', as: 'moves' } },
+        { $project: { id: 1, character: 1, moves: { $size: '$moves' } } },
+        { $sort: { moves: -1 } },
+        { $limit: limit || 5 },
+      ])
+      .toArray();
+  },
+
   // Rooms
 
   async getRoom(coords) {

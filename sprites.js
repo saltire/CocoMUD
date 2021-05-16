@@ -9,6 +9,7 @@ const { range } = require('./utils');
 const ts = 20;
 
 const files = {
+  title: { name: 'title' },
   background: { name: 'background2' },
   ns: range(10).map(i => ({ name: `Path_NS_${i + 1}` })),
   ew: range(10).map(i => ({ name: `Path_E_${i + 1}` })),
@@ -37,7 +38,7 @@ let spritesPromise;
 let characterImg;
 
 module.exports = {
-  async getSprite({ name, ...data }) {
+  async loadSprite({ name, ...data }) {
     const image = sharp(`./sprites/${name}.gif`);
     const { width, height } = await image.metadata();
     const tw = Math.ceil(width / ts);
@@ -65,13 +66,13 @@ module.exports = {
       spritesPromise = Promise
         .all(Object.entries(files).map(async ([id, file]) => {
           if (Array.isArray(file)) {
-            spriteTree[id] = await Promise.all(file.map(f => this.getSprite(f)));
+            spriteTree[id] = await Promise.all(file.map(f => this.loadSprite(f)));
             spriteTree[id].forEach(sprite => {
               spriteList[sprite.name] = sprite;
             });
           }
           else {
-            spriteTree[id] = await this.getSprite(file);
+            spriteTree[id] = await this.loadSprite(file);
             spriteList[file.name] = spriteTree[id];
           }
         }))
@@ -79,6 +80,11 @@ module.exports = {
     }
 
     return spritesPromise;
+  },
+
+  async getSprite(name) {
+    const { spriteTree } = await this.getSprites();
+    return spriteTree[name];
   },
 
   async getCharacters() {

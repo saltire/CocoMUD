@@ -25,7 +25,8 @@ module.exports = class Mud {
     let user = await db.getUser(message.author.id);
     if (!user) {
       user = await db.updateUser({ ...message.author });
-      return this.intro(user);
+      await this.intro(user);
+      return this.chooseCharacter(user);
     }
     if (!user.character) {
       return this.parseCharacter(user, message.content);
@@ -39,8 +40,14 @@ module.exports = class Mud {
 
     const [verb, ...words] = message.content.toLowerCase().split(' ');
 
+    if (verb === 'intro') {
+      return this.intro(user);
+    }
     if (verb === 'look') {
       return this.look(user);
+    }
+    if (verb === 'say' && words.length) {
+      return this.say(user, words.join(' '));
     }
 
     if ((verb === 'go' && dirs.includes(words[0])) || dirs.includes(verb)) {
@@ -72,36 +79,34 @@ module.exports = class Mud {
   }
 
   async intro(user) {
-    await this.send(user, 'Hello, and welcome to FunMUD!');
+    const topRoomsVisited = await db.getTopRoomsVisited();
 
-    await this.send(user, 'Type a number to choose your character:');
+    const titleImg = new Discord.MessageAttachment(
+      (await sprites.getSprite('title')).buffer, 'title.png');
+
     await this.send(user, {
-      files: [new Discord.MessageAttachment(await characters.getCharacterScreen())],
+      files: [titleImg],
+      embed: {
+        title: 'FunMUD',
+        description: 'A Discord Adventure',
+        fields: [
+          {
+            name: 'Top Rooms Visited',
+            value: (topRoomsVisited || []).map(u => `${u.character.name} - ${u.moves}`).join('\n'),
+            inline: true,
+          },
+        ],
+        image: { url: 'attachment://title.png' },
+        footer: { text: 'Marcus Kamps (Programming), Laurel Kamps (Graphics)' },
+      },
     });
   }
 
-  async look(user) {
-    const coords = user.currentRoom;
-    const room = (await db.getRoom(coords)) || await scene.createRoom(coords);
-
-    const sceneImg = new Discord.MessageAttachment(
-      await scene.drawScene(user, room), 'scene.png');
-
-    // const testImg = new Discord.MessageAttachment('./images/test.png');
-
+  async chooseCharacter(user) {
+    await this.send(user, 'Hello, and welcome to FunMUD!');
+    await this.send(user, 'Type a number to choose your character:');
     await this.send(user, {
-      // content: `You are in room ${user.currentRoom}.`,
-      files: [sceneImg],
-      embed: {
-        description: [
-          `You are in room ${user.currentRoom}.`,
-          ...(room.users || []).filter(u => u.id !== user.id)
-            .map(u => `**${u.character.name}** is here!`),
-        ].join('\n'),
-        image: {
-          url: 'attachment://scene.png',
-        },
-      },
+      files: [new Discord.MessageAttachment(await characters.getCharacterScreen())],
     });
   }
 
@@ -125,7 +130,7 @@ module.exports = class Mud {
   }
 
   async confirmCharacterName(user, content) {
-    if (content.toLowerCase() === 'yes') {
+    if (['y', 'yes'].includes(content.toLowerCase())) {
       await db.updateUser({
         id: user.id,
         currentRoom: [0, 0],
@@ -138,5 +143,38 @@ module.exports = class Mud {
     else {
       await this.parseCharacterName(user, content);
     }
+  }
+
+  async look(user) {
+    const coords = user.currentRoom;
+    const room = (await db.getRoom(coords)) || await scene.createRoom(coords);
+
+    const sceneImg = new Discord.MessageAttachment(
+      await scene.drawScene(user, room), 'scene.png');
+
+    // const testImg = new Discord.MessageAttachment('./images/test.png');
+
+    await this.send(user, {
+      // content: `You are in room ${user.currentRoom}.`,
+      files: [sceneImg],
+      embed: {
+        description: [
+          `You are in room ${user.currentRoom}.`,
+          ...(room.users || []).filter(u => u.id !== user.id)
+            .map(u => `**${u.character.name}** is here!`),
+        ].join('\n'),
+        image: { url: 'attachment://scene.png' },
+      },
+    });
+  }
+
+  async say(user, text) {
+    const { users } = await db.getRoom(user.currentRoom);
+
+    await Promise.all(users.map(u => this.send(u, {
+      embed: {
+        description: `**${user.character.name}** says: *${text}*`,
+      },
+    })));
   }
 };
