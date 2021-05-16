@@ -63,6 +63,7 @@ module.exports = {
         bymax: 6,
       });
       tryPlacingSprite(choose(spriteTree.large));
+      tryPlacingSprite(choose(spriteTree.large));
     }
     else if (coords[0] === 1 && coords[1] === 0) {
       objects.push({
@@ -109,7 +110,17 @@ module.exports = {
       });
     }
 
-    range(random(10, 0)).forEach(() => {
+    const startScreen = coords[0] === 0 && coords[1] === 0;
+
+    const startingArea = (
+      (coords[0] === -1 && coords[1] === -1) ||
+      (coords[0] === 0 && coords[1] === -1) ||
+      (coords[0] === 1 && coords[1] === -1) ||
+      (coords[0] === -1 && coords[1] === 0) ||
+      (coords[0] === 0 && coords[1] === 0) ||
+      (coords[0] === 1 && coords[1] === 0));
+
+    range(random(startScreen ? 3 : 10, 0)).forEach(() => {
       tryPlacingSprite(choose(spriteTree.large));
     });
 
@@ -117,12 +128,7 @@ module.exports = {
       tryPlacingSprite(choose(spriteTree.small));
     });
 
-    if (!((coords[0] === -1 && coords[1] === -1) ||
-      (coords[0] === 0 && coords[1] === -1) ||
-      (coords[0] === 1 && coords[1] === -1) ||
-      (coords[0] === -1 && coords[1] === 0) ||
-      (coords[0] === 0 && coords[1] === 0) ||
-      (coords[0] === 1 && coords[1] === 0))) {
+    if (!startingArea) {
       if (!random(3)) {
         const cocoSprite = choose(spriteTree.coconuts);
         range(random(5, 1)).forEach(() => {
@@ -144,14 +150,14 @@ module.exports = {
 
   getDescription(user, room) {
     let description = 'You are in the wilderness.';
-    if (room.objects.length < 20) {
-      description = 'You are in a grassy meadow.';
-    }
-    else if (room.objects.filter(o => o.name.startsWith('tree')).length > 2) {
+    if (room.objects.filter(o => o.name.startsWith('tree')).length > 2) {
       description = 'You are in a forest.';
     }
     else if (room.objects.filter(o => o.name.startsWith('rock')).length > 15) {
       description = 'You are in a rocky area.';
+    }
+    else if (room.objects.length < 20) {
+      description = 'You are in a grassy meadow.';
     }
 
     const notes = [];

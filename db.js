@@ -145,4 +145,11 @@ module.exports = {
       ])
       .toArray();
   },
+
+  // Messages
+
+  async logMessage(userId, content) {
+    return (await this.collection('messages'))
+      .insertOne({ userId, content });
+  },
 };

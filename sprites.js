@@ -23,6 +23,7 @@ const files = {
     { name: 'smallfern2' },
   ],
   large: [
+    { name: 'bush1', bw: 3, bh: 2, bx: 0, by: 1 },
     { name: 'fern', bw: 2, bh: 1, bx: 0, by: 1 },
     { name: 'tree_froot1', bw: 2, bh: 2, bx: 1, by: 4 },
     { name: 'tree_hole', bw: 3, bh: 2, bx: 1, by: 4 },
