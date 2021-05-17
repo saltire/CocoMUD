@@ -93,6 +93,9 @@ module.exports = class Mud {
       ['nuts', 'coconuts', 'nut', 'coconut'].includes(words[0])) {
       return this.drop(user);
     }
+    if (verb === 'leaderboards') {
+      return this.leaderboards(user);
+    }
     if (verb === 'score') {
       return this.score(user);
     }
@@ -104,8 +107,9 @@ module.exports = class Mud {
   }
 
   async intro(user) {
-    const [topRoomsVisited, topCoconutsReturned] = await Promise.all([
+    const [topRoomsVisited, topMoves, topCoconutsReturned] = await Promise.all([
       db.getTopRoomsVisited(),
+      db.getTopMoves(),
       db.getTopCoconutsReturned(),
     ]);
 
@@ -121,6 +125,11 @@ module.exports = class Mud {
           {
             name: 'Most Rooms Visited',
             value: (topRoomsVisited || []).map(c => `${c.name} - ${c.moves}`).join('\n'),
+            inline: true,
+          },
+          {
+            name: 'Most Moves',
+            value: (topMoves || []).map(c => `${c.name} - ${c.moves}`).join('\n'),
             inline: true,
           },
           {
@@ -147,6 +156,37 @@ module.exports = class Mud {
     });
   }
 
+  async leaderboards(user) {
+    const [topRoomsVisited, topMoves, topCoconutsReturned] = await Promise.all([
+      db.getTopRoomsVisited(),
+      db.getTopMoves(),
+      db.getTopCoconutsReturned(),
+    ]);
+
+    await this.send(user, {
+      embed: {
+        title: 'Leaderboards',
+        fields: [
+          {
+            name: 'Most Rooms Visited',
+            value: (topRoomsVisited || []).map(c => `${c.name} - ${c.moves}`).join('\n'),
+            inline: true,
+          },
+          {
+            name: 'Most Moves',
+            value: (topMoves || []).map(c => `${c.name} - ${c.moves}`).join('\n'),
+            inline: true,
+          },
+          {
+            name: 'Most Coconuts Returned',
+            value: (topCoconutsReturned || []).map(c => `${c.name} - ${c.coconutsReturned}`).join('\n'),
+            inline: true,
+          },
+        ].filter(f => f.value),
+      },
+    });
+  }
+
   async help(user) {
     await this.send(user, {
       embed: {
@@ -161,6 +201,7 @@ module.exports = class Mud {
               '**drop** / **put *[object]*** - Drop an object.',
               '**say *[something]*** - Say something out loud.',
               '**score** - Show your current score.',
+              '**leaderboards** - Show the leaderboards. Did you make it?',
               '**credits** - See the credits.',
               '**restart** - Abandon your game and start again.',
               '**quit** - Abandon your game. You won\'t receive any further messages.',

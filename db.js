@@ -80,6 +80,26 @@ module.exports = {
   async getTopRoomsVisited(limit) {
     return (await this.collection('characters'))
       .aggregate([
+        {
+          $lookup: {
+            from: 'moves',
+            foreignField: 'characterId',
+            localField: 'id',
+            as: 'moves',
+          },
+        },
+        { $unwind: '$moves' },
+        { $group: { _id: { id: '$id', name: '$name', to: '$moves.to' } } },
+        { $group: { _id: '$_id.id', moves: { $sum: 1 }, name: { $first: '$_id.name' } } },
+        { $sort: { moves: -1 } },
+        { $limit: limit || 5 },
+      ])
+      .toArray();
+  },
+
+  async getTopMoves(limit) {
+    return (await this.collection('characters'))
+      .aggregate([
         { $lookup: { from: 'moves', foreignField: 'characterId', localField: 'id', as: 'moves' } },
         { $project: { name: 1, moves: { $size: '$moves' } } },
         { $match: { moves: { $gt: 0 } } },
