@@ -140,7 +140,7 @@ module.exports = class Mud {
           {
             name: 'Developer Notes',
             value: [
-              'Hello TOJam! Hopefully this game works, but probably it doesn\'t!',
+              'Hello TOJam! Thanks for playing!',
               '',
               'Some other mechanics we had planned but haven\'t yet made it: giant pools of sticky oobleck, swarms of bees, waypoints and portals, clever escapes, grisly deaths, and grim looming statues where other characters have met their untimely end...',
               '',
